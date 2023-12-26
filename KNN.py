@@ -1,61 +1,106 @@
-from matplotlib import pyplot as plt
-from mlxtend.plotting import plot_decision_regions
-from sklearn.datasets import load_breast_cancer
+import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report,precision_score, recall_score ,auc,roc_curve
+# from sklearn.model_selection import StratifiedKFold, cross_val_score
+import seaborn as sns
+# import numpy as np
+import matplotlib.pyplot as plt
+
+def get_percent_res(result):
+    res=round((result*100),2)
+    res=str(res)+"%"
+    return res
+
+labels=['Cycle_Index', 'Discharge Time (s)', 'Decrement 3.6-3.4V (s)',
+       'Max. Voltage Dischar. (V)', 'Min. Voltage Charg. (V)',
+       'Time at 4.15V (s)', 'Time constant current (s)', 'Charging time (s)',
+       'RUL']
+# Load dataset
+df = pd.read_csv('datasets/Battery_RUL.csv')
+print(df.columns)
+# Prepare the data
+
+X = df.drop('RUL', axis=1)  # Features
+y = df['RUL']               # Target variable
 
 
-cancer = load_breast_cancer()
+# X = X.fillna(X.mean())
+# y = y.fillna(y.mean())
 
-# Handle missing values if any
-# data = cancer.dropna()  # You may choose a different strategy based on your data
+# Convert RUL to classes (you can adjust the bins or labels as needed)
 
-# Separate features (X) and target variable (y)
-X = cancer.data[:, :2]
-y = cancer.target
+# For simplicity, let's use two classes: RUL > 50 and RUL <= 50
+y_class = (y > 50).astype(int)
 
-# Split the dataset into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y_class, test_size=0.3, random_state=None)
 
-# Pre_processing
-# Standardize/normalize the features
+# # Standardize the features
 scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 
-# K-Nearest Neighbors (KNN)
-knn_classifier = KNeighborsClassifier()
-knn_classifier.fit(X_train, y_train)
-knn_accuracy = knn_classifier.score(X_test, y_test)
+# Step 3: Apply K-Nearest Neighbors for Classification
+# Initialize KNN classifier model
+knn_classifier = KNeighborsClassifier(n_neighbors=5)
 
-plt.subplot(3,1,1)
-plt.scatter(X_train[y_train == 0, 0],
-            X_train[y_train == 0, 1],
-            marker='o',
-            label='class 0 (Setosa)')
+# Fit the model
+knn_classifier.fit(X_train_scaled, y_train)
 
-plt.scatter(X_train[y_train == 1, 0],
-            X_train[y_train == 1, 1],
-            marker='^',
-            label='class 1 (Versicolor)')
+# Predict on the test set
+y_pred_knn_class = knn_classifier.predict(X_test_scaled)
 
-plt.scatter(X_train[y_train == 2, 0],
-            X_train[y_train == 2, 1],
-            marker='s',
-            label='class 2 (Virginica)')
+# Evaluate the model using accuracy
+accuracy_knn_class = accuracy_score(y_test, y_pred_knn_class)
 
-plt.legend(loc='upper left')
+# Assuming you have the true labels (y_test) and predicted labels (y_pred_knn_class)
+# Replace these variables with your actual test labels and predicted labels
+plt.subplot(1,2,1)
+cm = confusion_matrix(y_test, y_pred_knn_class)
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False)
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.title('Confusion Matrix')
+
+# Classification Report
+print('Classification Report:\n', classification_report(y_test, y_pred_knn_class))
+
+# True positive, true negative, false positive, false negative
+tn, fp, fn, tp = confusion_matrix(y_test, y_pred_knn_class).ravel()
+
+# Sensitivity (Recall)
+sensitivity = tp / (tp + fn)
+
+# Specificity
+specificity = tn / (tn + fp)
+
+# Precision
+precision = tp / (tp + fp)
+
+# Recall (Sensitivity)
+recall = tp / (tp + fn)
+
+# Print or log the results
+print(f'Accuracy (KNN Classification): {get_percent_res(accuracy_knn_class)}')
+print(f'Sensitivity : {get_percent_res(sensitivity)}')
+print(f'Specificity: {get_percent_res(specificity)}')
+print(f'Precision: {get_percent_res(precision)}')
+print(f'Recall : {get_percent_res(recall)}')
 
 
-plt.subplot(3,1,2)
-plot_decision_regions(X_train, y_train, knn_classifier)
-plt.legend(loc='upper left')
-# plt.show()
+# Compute ROC curve and AUC
+fpr, tpr, thresholds = roc_curve(y_test, y_pred_knn_class)
+roc_auc = auc(fpr, tpr)
 
-plt.subplot(3,1,3)
-
-plot_decision_regions(X_test, y_test, knn_classifier)
-plt.legend(loc='upper left')
-
+# Plot ROC curve
+plt.subplot(1,2,2)
+# plt.figure(figsize=(8, 8))
+plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc='lower right')
 plt.show()
