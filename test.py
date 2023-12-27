@@ -1,104 +1,74 @@
-# import pandas as pd
-#
-# # Replace 'your_dataset.csv' with the correct file path
-# df = pd.read_csv('datasets/Battery_RUL.csv')
-# print(df.head())
-# df = df.dropna()  # Drop rows with missing values
-#
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error, r2_score, confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-from matplotlib import pyplot as plt
-from mlxtend.plotting import plot_decision_regions
+# Load dataset
+df = pd.read_csv('datasets/Battery_RUL.csv')
 
-# import pandas as pd
-# from matplotlib import pyplot as plt
-# from mlxtend.plotting import plot_decision_regions
-# from sklearn.datasets import load_iris, load_breast_cancer
-# from sklearn.model_selection import train_test_split
-# from sklearn.preprocessing import StandardScaler
-# from sklearn.neighbors import KNeighborsClassifier
-# from sklearn.linear_model import LinearRegression
-# from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-# from sklearn.svm import SVC
-#
-# # Load your dataset (replace 'your_dataset.csv' with the actual file name)
-# # data = load_iris()
-#
-# # Handle missing values if any
-# # data = data.dropna()  # You may choose a different strategy based on your data
-#
-# # Separate features (X) and target variable (y)
-# cancer = load_breast_cancer()
-# X = cancer.data[:, :2]
-# y = cancer.target
-#
-# # Split the dataset into training and testing sets
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-#
-# # Standardize/normalize the features
-# scaler = StandardScaler()
-# X_train = scaler.fit_transform(X_train)
-# X_test = scaler.transform(X_test)
-#
-# # K-Nearest Neighbors (KNN)
-# knn_classifier = KNeighborsClassifier()
-# knn_classifier.fit(X_train, y_train)
-# knn_accuracy = knn_classifier.score(X_test, y_test)
-#
-# plt.subplot(3,1,1)
-# plt.scatter(X_train[y_train == 0, 0],
-#             X_train[y_train == 0, 1],
-#             marker='o',
-#             label='class 0 (Setosa)')
-#
-# plt.scatter(X_train[y_train == 1, 0],
-#             X_train[y_train == 1, 1],
-#             marker='^',
-#             label='class 1 (Versicolor)')
-#
-# plt.scatter(X_train[y_train == 2, 0],
-#             X_train[y_train == 2, 1],
-#             marker='s',
-#             label='class 2 (Virginica)')
-#
-# plt.legend(loc='upper left')
-#
-#
-# plt.subplot(3,1,2)
-# plot_decision_regions(X_train, y_train, knn_classifier)
-# plt.legend(loc='upper left')
-# # plt.show()
-#
-# plt.subplot(3,1,3)
-#
-# plot_decision_regions(X_test, y_test, knn_classifier)
-# plt.legend(loc='upper left')
-#
-# plt.show()
-#
-#
-# # Linear Regression
-# linear_reg = LinearRegression()
-# linear_reg.fit(X_train, y_train)
-# linear_reg_score = linear_reg.score(X_test, y_test)
-#
-# # Decision Tree Classification
-# dt_classifier = DecisionTreeClassifier()
-# dt_classifier.fit(X_train, y_train)
-# dt_classifier_accuracy = dt_classifier.score(X_test, y_test)
-#
-# # Decision Tree Regression
-# dt_regressor = DecisionTreeRegressor()
-# dt_regressor.fit(X_train, y_train)
-# dt_regressor_score = dt_regressor.score(X_test, y_test)
-#
-# # Support Vector Machine (SVM)
-# svm_classifier = SVC()
-# svm_classifier.fit(X_train, y_train)
-# svm_accuracy = svm_classifier.score(X_test, y_test)
-#
-# # You can access the accuracy/score of each model and further evaluate their performance
-# print(f'KNN Accuracy: {knn_accuracy}')
-# print(f'Linear Regression Score: {linear_reg_score}')
-# print(f'Decision Tree Classification Accuracy: {dt_classifier_accuracy}')
-# print(f'Decision Tree Regression Score: {dt_regressor_score}')
-# print(f'SVM Accuracy: {svm_accuracy}')
+# Prepare the data
+X = df.drop('RUL', axis=1)  # Features
+y = df['RUL'] # Target variable
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=20)
+
+# Standardize the features,Preprocessing
+#Feature scaling is a preprocessing step in machine learning
+#where you transform the features of your dataset to be on a similar scale.
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Initialize KNN regressor model
+knn_regressor = KNeighborsRegressor()
+
+# Fit the model
+knn_regressor.fit(X_train_scaled, y_train)
+
+# Predict on the test set
+y_pred_knn_reg = knn_regressor.predict(X_test_scaled)
+
+# Evaluate the model using regression metrics
+mse = mean_squared_error(y_test, y_pred_knn_reg)
+r2 = r2_score(y_test, y_pred_knn_reg)
+
+
+# Print regression metrics
+print(f'Mean Squared Error (MSE): {mse}')
+print(f'R-squared (R2): {r2}')
+
+
+# Apply cross-validation for regression
+num_folds = 5
+kf = KFold(n_splits=num_folds, shuffle=True, random_state=42)
+cross_val_scores = cross_val_score(knn_regressor, X, y, cv=kf, scoring='neg_mean_squared_error')
+
+# Convert the negative MSE to positive
+cross_val_scores = -cross_val_scores
+
+# Print cross-validation results
+print("\nCross-Validation Scores (MSE):", cross_val_scores)
+print("Average MSE (Cross-Validation):", np.mean(cross_val_scores))
+
+# Plot actual vs predicted values
+plt.figure(figsize=(12, 6))
+plt.subplot(1, 2, 1)
+plt.scatter(y_test, y_pred_knn_reg)
+plt.xlabel('Actual RUL')
+plt.ylabel('Predicted RUL')
+plt.title('Actual vs Predicted Values')
+
+# Plot residuals
+residuals = y_test - y_pred_knn_reg
+plt.subplot(1, 2, 2)
+sns.histplot(residuals, kde=True)
+plt.xlabel('Residuals')
+plt.ylabel('Frequency')
+plt.title('Residuals Distribution')
+
+plt.show()

@@ -1,11 +1,10 @@
+import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report,precision_score, recall_score ,auc,roc_curve
-# from sklearn.model_selection import StratifiedKFold, cross_val_score
 import seaborn as sns
-# import numpy as np
 import matplotlib.pyplot as plt
 
 def get_percent_res(result):
@@ -13,10 +12,10 @@ def get_percent_res(result):
     res=str(res)+"%"
     return res
 
-labels=['Cycle_Index', 'Discharge Time (s)', 'Decrement 3.6-3.4V (s)',
-       'Max. Voltage Dischar. (V)', 'Min. Voltage Charg. (V)',
-       'Time at 4.15V (s)', 'Time constant current (s)', 'Charging time (s)',
-       'RUL']
+# labels=['Cycle_Index', 'Discharge Time (s)', 'Decrement 3.6-3.4V (s)',
+#        'Max. Voltage Dischar. (V)', 'Min. Voltage Charg. (V)',
+#        'Time at 4.15V (s)', 'Time constant current (s)', 'Charging time (s)',
+#        'RUL']
 # Load dataset
 df = pd.read_csv('datasets/Battery_RUL.csv')
 print(df.columns)
@@ -26,18 +25,15 @@ X = df.drop('RUL', axis=1)  # Features
 y = df['RUL']               # Target variable
 
 
-# X = X.fillna(X.mean())
-# y = y.fillna(y.mean())
-
 # Convert RUL to classes (you can adjust the bins or labels as needed)
 
 # For simplicity, let's use two classes: RUL > 50 and RUL <= 50
 y_class = (y > 50).astype(int)
 
 # Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y_class, test_size=0.3, random_state=None)
+X_train, X_test, y_train, y_test = train_test_split(X, y_class, test_size=0.3, random_state=64)
 
-# # Standardize the features
+# Standardize the features
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
@@ -104,3 +100,11 @@ plt.ylabel('True Positive Rate')
 plt.title('Receiver Operating Characteristic (ROC) Curve')
 plt.legend(loc='lower right')
 plt.show()
+
+num_folds = 5
+kf = KFold(n_splits=num_folds, shuffle=True, random_state=42)
+cross_val_scores = cross_val_score(knn_classifier, X, y, cv=kf, scoring='accuracy')
+
+# Print cross-validation results
+print("\nCross-Validation Scores:", cross_val_scores)
+print("Average Accuracy (Cross-Validation):", np.mean(cross_val_scores))
