@@ -20,6 +20,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random
 # Standardize the features,Preprocessing
 #Feature scaling is a preprocessing step in machine learning
 #where you transform the features of your dataset to be on a similar scale.
+
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
@@ -44,9 +45,17 @@ print(f'R-squared (R2): {r2}')
 
 
 # Apply cross-validation for regression
-num_folds = 5
+num_folds = 10
 kf = KFold(n_splits=num_folds, shuffle=True, random_state=42)
+
+# specifies that the scoring metric used is negative mean squared error (MSE).
+# The negative sign is used because scikit-learn convention for scoring is the higher,
+# the better, but in this case, lower MSE is better.
 cross_val_scores = cross_val_score(knn_regressor, X, y, cv=kf, scoring='neg_mean_squared_error')
+
+
+# the convention is to maximize the scoring metric,
+# but you want to minimize MSE, the sign is flipped to make it positive.
 
 # Convert the negative MSE to positive
 cross_val_scores = -cross_val_scores
@@ -63,6 +72,7 @@ plt.xlabel('Actual RUL')
 plt.ylabel('Predicted RUL')
 plt.title('Actual vs Predicted Values')
 
+# residuals would be the differences between the actual Remaining Useful Life (RUL) values and the predicted RUL values
 # Plot residuals
 residuals = y_test - y_pred_knn_reg
 plt.subplot(1, 2, 2)
