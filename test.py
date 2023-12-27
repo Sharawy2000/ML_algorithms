@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error, r2_score, confusion_matrix
+from sklearn.metrics import mean_squared_error, r2_score
 import seaborn as sns
 import matplotlib.pyplot as plt
 
