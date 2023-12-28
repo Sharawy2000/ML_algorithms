@@ -12,12 +12,14 @@ def main():
     # Load dataset
     df = pd.read_csv('datasets/Battery_RUL.csv')
 
+    df = df.dropna()
+
     # Prepare the data
     X = df.drop('RUL', axis=1)  # Features
     y = df['RUL'] # Target variable
 
     # Split the data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=20)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=None)
 
     # Standardize the features,Preprocessing
     #Feature scaling is a preprocessing step in machine learning
@@ -62,9 +64,14 @@ def main():
     # Convert the negative MSE to positive
     cross_val_scores = -cross_val_scores
 
+    best_cross_val_MSE=sorted(cross_val_scores)
+    best_MSE=best_cross_val_MSE[0]
+
     # Print cross-validation results
     print("\nCross-Validation Scores (MSE):", cross_val_scores)
     print("Average MSE (Cross-Validation):", np.mean(cross_val_scores))
+    print("Best MSE (Cross-Validation):",best_MSE)
+
 
     # Plot actual vs predicted values
     plt.figure(figsize=(12, 6))

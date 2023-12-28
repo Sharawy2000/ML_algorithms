@@ -1,47 +1,98 @@
-from six import StringIO
-from sklearn.datasets import load_breast_cancer
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+import matplotlib.pyplot as plt
+from sklearn.tree import plot_tree
+from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeRegressor # Import Decision Tree Regressor
-from sklearn.model_selection import train_test_split # Import train_test_split function
-from sklearn.tree import export_graphviz
-from IPython.display import Image
-import pydotplus
-from sklearn.metrics import accuracy_score
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 
+def main():
 
+    # Load the dataset
+    df = pd.read_csv('datasets/Battery_RUL.csv')
 
-cancer = load_breast_cancer()
-X = cancer.data[:, :2]
-y = cancer.target
+    # Assuming the target variable is 'RUL' (Remaining Useful Life)
+    X = df.drop(['RUL'], axis=1)
+    y = df['RUL']
 
+    # Split the dataset into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=100)
 
-# Split dataset into training set and test set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1) # 70% training and 30% test
+    # Define preprocessing steps
+    numeric_features = X.select_dtypes(include=['float64']).columns
+    numeric_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='mean')),
+        ('scaler', StandardScaler())
+    ])
 
-# Pre_processing
-# Standardize/normalize the features
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+    # Combine preprocessing steps
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numeric_features)
+        ])
 
-# Create Decision Tree Regression object
-clf = DecisionTreeRegressor()
+    # Decision Tree Model with preprocessing
+    model = Pipeline(steps=[('preprocessor', preprocessor),
+                            ('regressor', DecisionTreeRegressor(random_state=42))])
 
-# Train Decision Tree Regression
-clf = clf.fit(X_train,y_train)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
 
-y_pred = clf.predict(X_test)
+    # Evaluate the model
+    mse = mean_squared_error(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)  # MAE
+    r2 = r2_score(y_test, y_pred)
+    print('------------ Decision Tree with Preprocessing ---------------')
+    print(f'Accuracy Percentage: {r2 * 100:.2f}%')
+    print(f'Mean Squared Error (MSE): {mse}')
+    print(f'Test Set Mean Absolute Error (MAE): {mae}')
 
-print("Accuracy:",accuracy_score(y_test, y_pred))
+    # Pruned model with preprocessing
+    pruned_model = Pipeline(steps=[('preprocessor', preprocessor),
+                                    ('regressor', DecisionTreeRegressor(max_depth=4, min_samples_split=5, random_state=42))])
 
-# Visualization
+    pruned_model.fit(X_train, y_train)
+    y_pred_pruned = pruned_model.predict(X_test)
 
-dot_data = StringIO()
+    # Evaluate the pruned model
+    mse_pruned = mean_squared_error(y_test, y_pred_pruned)
+    mae_pruned = mean_absolute_error(y_test, y_pred_pruned)
+    r2_pruned = r2_score(y_test, y_pred_pruned)
 
-export_graphviz(clf, out_file=dot_data,filled=True, rounded=True,special_characters=True,class_names=['0','1'])
-graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
+    print('------------ Pruned Model with Preprocessing ---------------')
+    print(f'Accuracy Percentage: {r2_pruned * 100:.2f}%')
+    print(f'Mean Squared Error (MSE): {mse_pruned}')
+    print(f'Mean Absolute Error (MAE): {mae_pruned}')
 
-graph.write_png('decision_tree_output_images/diabetes_Regression.png')
-Image(graph.create_png())
+    # Visualize the pruned Decision Tree
+    plt.figure(figsize=(20, 10))
+    plot_tree(
+        pruned_model.named_steps['regressor'],
+        filled=True,
+        fontsize=10
+    )
+    plt.title(f'Pruned Decision Tree with Preprocessing\n\nMSE: {mse_pruned:.2f}, MAE: {mae_pruned:.2f},\nAccuracy: {r2_pruned * 100:.2f}%')
+    plt.show()
+
+    # Residual plots
+    plt.scatter(y_test, y_test - y_pred, color='black', alpha=0.5)
+    plt.title(f"Decision Tree with Preprocessing")
+    plt.xlabel('Actual Values')
+    plt.ylabel('Residuals')
+    plt.axhline(y=0, color='gray', linestyle='--', linewidth=2)
+    plt.show()
+
+    plt.scatter(y_test, y_test - y_pred_pruned, color='green', alpha=0.5)
+    plt.title(f"Pruned Decision Tree with Preprocessing")
+    plt.xlabel('Actual Values')
+    plt.ylabel('Residuals')
+    plt.axhline(y=0, color='blue', linestyle='--', linewidth=2)
+    plt.show()
+
+if __name__ == '__main__':
+    main()
 
 

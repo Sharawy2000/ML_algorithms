@@ -6,9 +6,10 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import *
 import qdarkstyle
 import KNN
-# import SVM
-# import Linear_regression
-
+import SVM
+import Linear_regression
+import Decision_tree_regression
+import Decision_tree_classification
 
 class MyWindow(QWidget):
     def __init__(self):
@@ -86,36 +87,29 @@ class MyWindow(QWidget):
 
     # Define a method to select an image
 
-    def enhance_algorithms(self):
+    def ML_algorithms(self):
 
         if selected_item == 'KNN Regression':
-            # Apply blur algorithm
             print("Applying KNN Regression Algorithm")
             KNN_algo()
         elif selected_item == 'SVM':
-            # Apply edge enhance algorithm
             print("Applying SVM Algorithm")
-            # contrast_algo(self.filename)
-
+            SVM_algo()
         elif selected_item == 'Linear Regression':
-            # Apply brightness algorithm
             print("Applying Linear Regression Algorithm")
-            # brightness_algo(self.filename)
+            Linear_regression_algo()
 
         elif selected_item == 'Decision Tree Classification':
-            # Apply brightness algorithm
             print("Applying Decision Tree Classification Algorithm")
-            # brightness_algo(self.filename)
-
+            DT_classification_algo()
         elif selected_item == 'Decision Tree Regression':
-            # Apply brightness algorithm
             print("Applying Decision Tree Regression Algorithm")
-            # brightness_algo(self.filename)
+            DT_regression_algo()
 
     def apply_algorithm(self):
         global selected_item
         selected_item = self.combo_algorithms.currentText()
-        self.enhance_algorithms()
+        self.ML_algorithms()
 
     # Define a function for setting the dark theme
     def setDark(self):
@@ -123,11 +117,18 @@ class MyWindow(QWidget):
 
     # Define a function for setting the light theme
     def setLight(self):
-
         self.setStyleSheet('')
 
 def KNN_algo():
     KNN.main()
+def SVM_algo():
+    SVM.main()
+def Linear_regression_algo():
+    Linear_regression.main()
+def DT_classification_algo():
+    Decision_tree_classification.main()
+def DT_regression_algo():
+    Decision_tree_regression.main()
 
 
 if __name__ == '__main__':
