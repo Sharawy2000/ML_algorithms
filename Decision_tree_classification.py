@@ -1,44 +1,47 @@
 import pandas as pd
-from six import StringIO
-from sklearn.datasets import load_breast_cancer
-from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifier
-from sklearn.model_selection import train_test_split # Import train_test_split function
-from sklearn.tree import export_graphviz
-from IPython.display import Image
-import pydotplus
-from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+from sklearn.tree import plot_tree
 
+# Load the dataset
+dataset = "datasets\Battery_RUL.csv"
+df = pd.read_csv(dataset)
 
-cancer = load_breast_cancer()
-X = cancer.data[:, :2]
-y = cancer.target
+# Assuming the target variable is 'RUL_label' for classification
+df['RUL_label'] = pd.qcut(df['RUL'], q=[0, 1/3, 2/3, 1], labels=['Label1', 'Label2', 'Label3'])
 
-# Split dataset into training set and test set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1) # 70% training and 30% test
+# X and y for classification
+X = df.drop(['RUL', 'RUL_label'], axis=1)
+y = df['RUL_label']
 
-# Standardize/normalize the features
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=100)
 
-# Create Decision Tree classifer object
-clf = DecisionTreeClassifier()
+# Decision Tree Model without preprocessing
+model = DecisionTreeClassifier(random_state=42)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
 
-# Train Decision Tree Classifer
-clf = clf.fit(X_train,y_train)
+# Evaluate the model
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+classification_rep = classification_report(y_test, y_pred)
 
-y_pred = clf.predict(X_test)
+print('------------ Normal Decision Tree ---------------')
+print(f'Accuracy: {accuracy * 100:.2f}%')
+print(f'Confusion Matrix:\n{conf_matrix}')
+print(f'Classification Report:\n{classification_rep}')
 
-print("Accuracy:",accuracy_score(y_test, y_pred))
-
-# Visualization
-
-dot_data = StringIO()
-
-export_graphviz(clf, out_file=dot_data,filled=True, rounded=True,special_characters=True,class_names=['0','1'])
-graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
-
-graph.write_png('decision_tree_output_images/diabetes_Classification.png')
-Image(graph.create_png())
-
+# Visualize the Decision Tree
+plt.figure(figsize=(20, 10))
+plot_tree(
+    model,
+    filled=True,
+    fontsize=10,
+    feature_names=X.columns,
+    class_names=model.classes_
+)
+plt.title(f'Decision Tree\n\nAccuracy: {accuracy * 100:.2f}%')
+plt.show()
