@@ -4,6 +4,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 from sklearn.tree import plot_tree
+import seaborn as sns
 
 # Load the dataset
 dataset = "datasets\Battery_RUL.csv"
@@ -34,6 +35,12 @@ print(f'Accuracy: {accuracy * 100:.2f}%')
 print(f'Confusion Matrix:\n{conf_matrix}')
 print(f'Classification Report:\n{classification_rep}')
 
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=model.classes_, yticklabels=model.classes_)
+plt.xlabel('Predicted Labels')
+plt.ylabel('True Labels')
+plt.title('Confusion Matrix')
+plt.show()
 # Visualize the Decision Tree
 plt.figure(figsize=(20, 10))
 plot_tree(
